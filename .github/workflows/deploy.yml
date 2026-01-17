@@ -22,5 +22,8 @@ jobs:
             cd ~/app
             echo "${{ secrets.DOCKER_COMPOSE_YML }}" > docker-compose.yml
             echo "${{ secrets.NGINX_CONF }}" > nginx.conf
-            docker compose down
+            echo "${{ secrets.INDEX_HTML }}" > index.html
+
+            docker compose down || true
+            docker compose pull
             docker compose up -d

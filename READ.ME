@@ -1,0 +1,182 @@
+Good catch 👍
+Right now you **don’t see a README.md** because in the ZIP/script we focused on *automation files*, and GitHub **does NOT auto-create a README unless you ask it to**.
+
+Nothing is broken — you just need to **add one file**.
+
+Below is the **exact README.md you should add**.
+You can copy-paste it **as-is**.
+
+---
+
+## How to add README.md (2 minutes)
+
+### Option A — Add locally (recommended)
+
+In your repo folder:
+
+```bash
+touch README.md
+```
+
+Open it in an editor and paste **everything below**, then:
+
+```bash
+git add README.md
+git commit -m "Add README"
+git push
+```
+
+---
+
+### Option B — Add via GitHub UI
+
+1. Go to your repo on GitHub
+2. Click **Add file → Create new file**
+3. Name it: `README.md`
+4. Paste the content below
+5. Click **Commit new file**
+
+---
+
+## ✅ README.md (copy-paste exactly)
+
+````md
+# Azure VM + Docker + GitHub Actions (Fully Automated)
+
+This repository provisions **one Azure Linux VM using Terraform** and deploys a **3-container Docker application automatically** using **GitHub Actions**.
+
+## What This Deploys
+
+### Infrastructure (Terraform)
+- Azure Resource Group
+- Virtual Network + Subnet
+- Network Security Group (ports 22, 8082, 8088 open)
+- Linux VM (Ubuntu 22.04)
+- Docker + Docker Compose installed automatically on boot
+
+### Application (Docker)
+1. **SQL Server container**
+   - Private (not exposed publicly)
+   - Persistent data using Docker volume
+2. **.NET 8 API**
+   - Exposed on port `8082`
+   - Health endpoint: `/api/health`
+3. **Nginx Web UI**
+   - Exposed on port `8088`
+   - Reverse proxies `/api` to API (no CORS issues)
+
+---
+
+## Prerequisites
+
+- Azure account
+- Git
+- Terraform
+- GitHub account
+
+---
+
+## Step 1 — Create SSH Key
+
+```bash
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/azure_vm -N ""
+````
+
+---
+
+## Step 2 — Export SSH Public Key for Terraform
+
+```bash
+export TF_VAR_ssh_public_key="$(cat ~/.ssh/azure_vm.pub)"
+```
+
+---
+
+## Step 3 — Provision Azure VM
+
+```bash
+terraform init
+terraform apply -auto-approve
+```
+
+Save the output value:
+
+```
+VM_PUBLIC_IP
+```
+
+---
+
+## Step 4 — Set GitHub Secrets
+
+Go to **GitHub → Repo → Settings → Secrets → Actions** and add:
+
+| Name               | Value                                       |
+| ------------------ | ------------------------------------------- |
+| VM_IP              | Terraform output `VM_PUBLIC_IP`             |
+| VM_USER            | azureuser                                   |
+| VM_SSH_KEY         | Contents of `~/.ssh/azure_vm` (private key) |
+| DOCKER_COMPOSE_YML | Full content of `docker-compose.yml`        |
+| NGINX_CONF         | Full content of `nginx.conf`                |
+
+---
+
+## Step 5 — Push Code to GitHub
+
+```bash
+git add .
+git commit -m "Initial automated deployment"
+git push origin main
+```
+
+This triggers GitHub Actions automatically.
+
+---
+
+## Step 6 — Access Application
+
+* Web UI
+
+  ```
+  http://<VM_PUBLIC_IP>:8088
+  ```
+
+* API Health
+
+  ```
+  http://<VM_PUBLIC_IP>:8082/api/health
+  ```
+
+---
+
+## How Automation Works
+
+1. Terraform creates Azure VM and networking
+2. Cloud-init installs Docker + Docker Compose
+3. GitHub Actions:
+
+   * SSH into VM
+   * Writes docker-compose.yml and nginx.conf
+   * Runs `docker compose up -d`
+4. App is live with no manual installs
+
+---
+
+## Cleanup
+
+To destroy everything:
+
+```bash
+terraform destroy -auto-approve
+```
+
+---
+
+## Notes
+
+* SQL Server data persists using Docker volume
+* No Docker installation required locally
+* All deployment is automated via GitHub Actions
+
+```
+
